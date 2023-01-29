@@ -7,11 +7,19 @@ A **data pipeline** is a service that receives data as input and outputs more da
 
 ![data pipeline](images/01_01.png)
 
+# Docker and Postgres
+## Docker basic concepts
+
+**Docker** is a _containerization software_ that allows us to isolate software in a similar way to virtual machines but in a much leaner way.
+
+A **Docker image** is a _snapshot_ of a container that we can define to run our software, or in this case our data pipelines. By exporting our Docker images to Cloud providers such as Amazon Web Services or Google Cloud Platform we can run our containers there.
+
 ### 1. to run docker on bash:
 #### `docker run -it --entrypoint=bash python:3.10`
 ### 2. to use python commands in docker:
 #### `# python` 
 
+## Creating a custom pipeline with Docker
 
 Let's create an example pipeline. We will create a dummy `pipeline.py` Python script that receives an argument and prints it.
 
@@ -71,3 +79,60 @@ You should get the same output you did when you ran the pipeline script by itsel
 
 >Note: these instructions asume that `pipeline.py` and `Dockerfile` are in the same directory. The Docker commands should also be run from the same directory as these files.
 
+
+## Running Postgres in a container
+### 1. we need to create yaml data and we write inside it  the following code: 
+
+```bash
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: always
+
+
+ 
+docker run -it \
+  -e POSTGRES_USER="root" \ # environmental configurations
+  -e POSTGRES_PASSWORD="root" \
+  -e POSTGRES_DB="ny_taxi" \   # name of the database
+  -v /workspaces/data-engineering/ny_taxi_postgres_data:/var/lib/postgresql/data \  # mount a volume: possibility to map a folder we have on the host machine to our container
+  -p 5432:5432 \ # specify the port, map a port on our host machine to a port of the conatiner
+  postgres:13
+```
+
+### 2. we need to create a folder to store the data in. We will use the example folder `ny_taxi_postgres_data`.
+
+### 3. run the following command in bash: 
+ ```bash
+ docker run -it \
+  -e POSTGRES_USER="root" \ 
+  -e POSTGRES_PASSWORD="root" \
+  -e POSTGRES_DB="ny_taxi" \   
+  -v /workspaces/data-engineering/ny_taxi_postgres_data:/var/lib/postgresql/data \  
+  -p 5432:5432 \ 
+  postgres:13
+```
+
+* The container needs 3 environment variables:
+    * `POSTGRES_USER` is the username for logging into the database. We chose `root`.
+    * `POSTGRES_PASSWORD` is the password for the database. We chose `root`
+        * ***IMPORTANT: These values are only meant for testing. Please change them for any serious project.***
+    * `POSTGRES_DB` is the name that we will give the database. We chose `ny_taxi`.
+* `-v` points to the volume directory. The colon `:` separates the first part (path to the folder in the host computer) from the second part (path to the folder inside the container).
+    * Path names must be absolute. If you're in a UNIX-like system, you can use `pwd` to print you local folder as a shortcut; this example should work with both `bash` and `zsh` shells, but `fish` will require you to remove the `$`.
+    * This command will only work if you run it from a directory which contains the `ny_taxi_postgres_data` subdirectory you created above.
+* The `-p` is for port mapping. We map the default Postgres port to the same port in the host.
+* The last argument is the image name and tag. We run the official `postgres` image on its version `13`.
+
+
+- the command `docker ps` used to check if server is running.

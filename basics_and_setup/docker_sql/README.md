@@ -115,11 +115,11 @@ docker run -it \
 ### 3. run the following command in bash: 
  ```bash
  docker run -it \
-  -e POSTGRES_USER="root" \ 
+  -e POSTGRES_USER="root" \
   -e POSTGRES_PASSWORD="root" \
-  -e POSTGRES_DB="ny_taxi" \   
-  -v /workspaces/data-engineering/ny_taxi_postgres_data:/var/lib/postgresql/data \  
-  -p 5432:5432 \ 
+  -e POSTGRES_DB="ny_taxi" \
+  -v /workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data \
+  -p 5432:5432 \
   postgres:13
 ```
 
@@ -136,3 +136,38 @@ docker run -it \
 
 
 - the command `docker ps` used to check if server is running.
+
+Once the container is running, we can log into our database with [pgcli](https://www.pgcli.com/) with the following command:
+
+```bash
+pgcli -h localhost -p 5432 -u root -d ny_taxi
+```
+* `-h` is the host. Since we're running locally we can use `localhost`.
+* `-p` is the port.
+* `-u` is the username.
+* `-d` is the database name.
+* The password is not provided; it will be requested after running the command.
+
+- `pgcli`: python lib.
+
+## Ingesting data to Postgres with Python
+1. I will now create a Jupyter Notebook `upload-data.ipynb` file which we will use to read a CSV file and export it to Postgres.
+
+2. download the NYC taxi dataset.
+```
+wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet
+```
+
+3. convert dataset file into csv if required
+
+4. ingest the data to Postgres using Jupyter Notebook. ee [upload-data.ipynb](./docker_sql/upload_data.ipynb).  Afterwards, we can check the ingested data using ```\dt``` in Postgres' terminal to list the tables, and ```\d yellow_taxi_data``` to describe the table ```yellow_taxi_data```.
+
+
+5. I can now use ```pgcli -h localhost -p 5432 -u root -d ny_taxi``` on a separate terminal to look at the database:
+
+- `\dt` for looking at available tables.
+- `\d yellow_taxi_data` for describing the new table.
+
+* i will get this result in terminal:
+
+![reslut](images/2.png)

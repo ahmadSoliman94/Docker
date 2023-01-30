@@ -171,3 +171,79 @@ wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.par
 * i will get this result in terminal:
 
 ![reslut](images/2.png)
+
+
+## Connecting pgAdmin and Postgres with Docker networking
+
+`pgcli` is a handy tool but it's cumbersome to use. [`pgAdmin` is a web-based tool](https://www.pgadmin.org/download/pgadmin-4-container/) that makes it more convenient to access and manage our databases. It's possible to run pgAdmin as as container along with the Postgres container, but both containers will have to be in the same _virtual network_ so that they can find each other.
+
+
+####  How to running pgAdmin:
+##### in `docker-compose.yaml` we copy th following command:
+```bash
+  docker run -it \
+  -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+  -e PGADMIN_DEFAULT_PASSWORD="root" \
+  -p 8080:80 \
+  dpage/pgadmin4
+```
+##### then paste it in terminal. 
+
+## Docker Networks
+### We need to use a Docker network so that one container that is running pgAdmin can communicate with another container that has the database (with a mounted volume).
+
+### 1. Create a network:
+```bash 
+docker network create pg-network
+```
+* You can remove the network later with the command `docker network rm pg-network` . You can look at the existing networks with `docker network ls` .
+
+### 2. Now when we run the docker containers postgres, we need to add an argument to tell them to connect to the network we created.
+
+```bash
+ docker run -it \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \
+  -e POSTGRES_DB="ny_taxi" \
+  -v /workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  --network=pg-network \
+  --name=pg-database \
+  postgres:13
+```
+### 3. We will now run the pgAdmin container on another terminal:
+```bash
+docker run -it \
+    -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+    -e PGADMIN_DEFAULT_PASSWORD="root" \
+    -p 8080:80 \
+    --network=pg-network \
+    --name pgadmin \
+    dpage/pgadmin4
+```
+
+### * NOTE: to stop docker running server using this command in terminal: 
+
+```bash
+docker stop container_id
+```
+#### we can get container_id and check which server is running using:
+```bash
+docker ps -a
+```
+#### to remove it forcefully:
+```bash 
+docker rm -f container_id
+```
+
+### 3. I should now be able to load pgAdmin on a web browser by browsing to localhost:8080. Use the same email and password you used for running the container to log in.
+###  4. Right-click on Servers on the left sidebar and select Create > Server
+![server](images/3.png)
+
+### 5. Now i connect to the server, I use the name of the Postgres container as the hostname/address which in our case was pg-database.
+
+![connect](images/4.png)
+
+### Now we have a fully featured graphical SQL manager that we can use to run admin tasks on the database and run queries using the Query Tool.
+
+![show](images/5.png)

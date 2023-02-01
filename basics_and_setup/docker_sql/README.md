@@ -85,22 +85,24 @@ You should get the same output you did when you ran the pipeline script by itsel
 
 ```bash
 services:
-  postgres:
+  pgdatabase:
     image: postgres:13
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=ny_taxi
     volumes:
-      - postgres-db-volume:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
-      interval: 5s
-      retries: 5
-    restart: always
+      - "/workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+    ports:
+      - "5432:5432"
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    ports:
+      - "8080:80"
 
-
- 
 docker run -it \
   -e POSTGRES_USER="root" \ # environmental configurations
   -e POSTGRES_PASSWORD="root" \
@@ -181,6 +183,25 @@ wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.par
 ####  How to running pgAdmin:
 ##### in `docker-compose.yaml` we copy th following command:
 ```bash
+services:
+  pgdatabase:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=ny_taxi
+    volumes:
+      - "/workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+    ports:
+      - "5432:5432"
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    ports:
+      - "8080:80"
+
   docker run -it \
   -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
   -e PGADMIN_DEFAULT_PASSWORD="root" \
@@ -208,7 +229,7 @@ docker network create pg-network
   -v /workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data \
   -p 5432:5432 \
   --network=pg-network \
-  --name=pg-database \
+  --name=pg-database1 \
   postgres:13
 ```
 ### 3. We will now run the pgAdmin container on another terminal:
@@ -247,3 +268,5 @@ docker rm -f container_id
 ### Now we have a fully featured graphical SQL manager that we can use to run admin tasks on the database and run queries using the Query Tool.
 
 ![show](images/5.png)
+
+

@@ -229,7 +229,7 @@ docker network create pg-network
   -v /workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data \
   -p 5432:5432 \
   --network=pg-network \
-  --name=pg-database1 \
+  --name=pg-database \
   postgres:13
 ```
 ### 3. We will now run the pgAdmin container on another terminal:

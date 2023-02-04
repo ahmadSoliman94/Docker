@@ -80,7 +80,11 @@ You should get the same output you did when you ran the pipeline script by itsel
 >Note: these instructions asume that `pipeline.py` and `Dockerfile` are in the same directory. The Docker commands should also be run from the same directory as these files.
 
 
-## Running Postgres in a container
+## Running Postgres with Docker Compose
+### Docker Compose
+
+#### `Docker Compose` is a tool for defining and running multi-container Docker applications. It allows you to configure and run multiple containers, networks, and volumes in a single YAML file. This makes it easy to manage and configure multiple containers as part of a single application. Docker Compose uses a docker-compose.yaml file to define the services (containers), networks, and volumes that make up an application. The file is written in YAML, which is a human-readable format for specifying configuration settings.
+
 ### 1. we need to create yaml data and we write inside it  the following code: 
 
 ```bash
@@ -95,34 +99,6 @@ services:
       - "/workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
     ports:
       - "5432:5432"
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-      - PGADMIN_DEFAULT_PASSWORD=root
-    ports:
-      - "8080:80"
-
-docker run -it \
-  -e POSTGRES_USER="root" \ # environmental configurations
-  -e POSTGRES_PASSWORD="root" \
-  -e POSTGRES_DB="ny_taxi" \   # name of the database
-  -v /workspaces/data-engineering/ny_taxi_postgres_data:/var/lib/postgresql/data \  # mount a volume: possibility to map a folder we have on the host machine to our container
-  -p 5432:5432 \ # specify the port, map a port on our host machine to a port of the conatiner
-  postgres:13
-```
-
-### 2. we need to create a folder to store the data in. We will use the example folder `ny_taxi_postgres_data`.
-
-### 3. run the following command in bash: 
- ```bash
- docker run -it \
-  -e POSTGRES_USER="root" \
-  -e POSTGRES_PASSWORD="root" \
-  -e POSTGRES_DB="ny_taxi" \
-  -v /workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data \
-  -p 5432:5432 \
-  postgres:13
 ```
 
 * The container needs 3 environment variables:
@@ -137,7 +113,32 @@ docker run -it \
 * The last argument is the image name and tag. We run the official `postgres` image on its version `13`.
 
 
-- the command `docker ps` used to check if server is running.
+### 2. then we write the command to start the services: 
+```bash
+docker-compose up
+```
+
+- to stop the services:
+```bash
+docker-compose down
+```
+
+### 3. we need to create a folder to store the data in. We will use the example folder `ny_taxi_postgres_data`.
+
+
+### * NOTE: to stop docker running server using this command in terminal: 
+
+```bash
+docker stop container_id
+```
+#### we can get container_id and check which server is running using:
+```bash
+docker ps -a
+```
+#### to remove it forcefully:
+```bash 
+docker rm -f container_id
+```
 
 Once the container is running, we can log into our database with [pgcli](https://www.pgcli.com/) with the following command:
 
@@ -174,14 +175,15 @@ wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.par
 
 ![reslut](images/2.png)
 
+* ##  `Befor connecting we need to remove all servers`.
 
-## Connecting pgAdmin and Postgres with Docker networking
+## Connecting pgAdmin and Postgres with Docker networking with Docker Compose
 
 `pgcli` is a handy tool but it's cumbersome to use. [`pgAdmin` is a web-based tool](https://www.pgadmin.org/download/pgadmin-4-container/) that makes it more convenient to access and manage our databases. It's possible to run pgAdmin as as container along with the Postgres container, but both containers will have to be in the same _virtual network_ so that they can find each other.
 
 
-####  How to running pgAdmin:
-##### in `docker-compose.yaml` we copy th following command:
+###  How to running pgAdmin:
+### in `docker-compose.yaml` we copy th following command:
 ```bash
 services:
   pgdatabase:
@@ -191,7 +193,7 @@ services:
       - POSTGRES_PASSWORD=root
       - POSTGRES_DB=ny_taxi
     volumes:
-      - "/workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+      - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
     ports:
       - "5432:5432"
   pgadmin:
@@ -199,65 +201,27 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@admin.com
       - PGADMIN_DEFAULT_PASSWORD=root
+    volumes:
+      - "./data_pgadmin:/var/lib/pgadmin"
     ports:
       - "8080:80"
-
-  docker run -it \
-  -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
-  -e PGADMIN_DEFAULT_PASSWORD="root" \
-  -p 8080:80 \
-  dpage/pgadmin4
 ```
-##### then paste it in terminal. 
+
 
 ## Docker Networks
 ### We need to use a Docker network so that one container that is running pgAdmin can communicate with another container that has the database (with a mounted volume).
 
-### 1. Create a network:
+### Create a network:
 ```bash 
 docker network create pg-network
 ```
+* note: with docker-compse we do not need the method above. 
+
 * You can remove the network later with the command `docker network rm pg-network` . You can look at the existing networks with `docker network ls` .
 
-### 2. Now when we run the docker containers postgres, we need to add an argument to tell them to connect to the network we created.
+### - `We can now run Docker compose again.`
 
-```bash
- docker run -it \
-  -e POSTGRES_USER="root" \
-  -e POSTGRES_PASSWORD="root" \
-  -e POSTGRES_DB="ny_taxi" \
-  -v /workspaces/data-engineering/basics_and_setup/docker_sql/ny_taxi_postgres_data:/var/lib/postgresql/data \
-  -p 5432:5432 \
-  --network=pg-network \
-  --name=pg-database \
-  postgres:13
-```
-### 3. We will now run the pgAdmin container on another terminal:
-```bash
-docker run -it \
-    -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
-    -e PGADMIN_DEFAULT_PASSWORD="root" \
-    -p 8080:80 \
-    --network=pg-network \
-    --name pgadmin \
-    dpage/pgadmin4
-```
-
-### * NOTE: to stop docker running server using this command in terminal: 
-
-```bash
-docker stop container_id
-```
-#### we can get container_id and check which server is running using:
-```bash
-docker ps -a
-```
-#### to remove it forcefully:
-```bash 
-docker rm -f container_id
-```
-
-### 3. I should now be able to load pgAdmin on a web browser by browsing to localhost:8080. Use the same email and password you used for running the container to log in.
+### 3. I should now be able to load pgAdmin on a web browser by browsing to `http://localhost:8080`. Use the same email and password you used for running the container to log in.
 ###  4. Right-click on Servers on the left sidebar and select Create > Server
 ![server](images/3.png)
 
@@ -265,8 +229,13 @@ docker rm -f container_id
 
 ![connect](images/4.png)
 
-### Now we have a fully featured graphical SQL manager that we can use to run admin tasks on the database and run queries using the Query Tool.
-
 ![show](images/5.png)
+
+### We can see that the ny_taxi database is present and that the green_taxi table is available inside that database.
+
+![lokdf](images/6.png)
+
+![lokdf](images/7.png)
+
 
 

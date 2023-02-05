@@ -238,4 +238,51 @@ docker network create pg-network
 ![lokdf](images/7.png)
 
 
+# Dockerizing the Ingestion Script: 
+### 1. Convert the Jupyter notebook into a script by saving it as .py file and save it as ingest_data.py
+### 2. Using `argparse` in ingest_data.py to parse command line arguments.
+#### The `argparse` module makes it easy to write user-friendly command-line interfaces. The program defines what arguments it requires, and argparse will figure out how to parse those out of `sys.argv`. The argparse module also automatically generates help and usage messages. The module will also issue errors when users give the program invalid arguments.
 
+* ###  We will use argparse to handle the following command line arguments:
+  - Username
+  - Password
+  - Host
+  - Port
+  - Database name
+  - Table name
+  - URL for the CSV file
+
+* ###  The engine we created for connecting to Postgres will be tweaked so that we pass the parameters and build the URL from them, like this:
+```bash
+engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{db}')
+```
+
+* ### To chcek the completed script [here](../docker_sql/ingest_data.py).
+
+#### In order to test the script we will have to drop the table we previously created. In pgAdmin, in the sidebar navigate to Servers > Docker localhost > Databases > ny_taxi > Schemas > public > Tables > yellow_taxi_data, right click on yellow_taxi_data and select Query tool. Introduce the following command:
+
+```bash
+DROP TABLE yellow_taxi_data;
+```
+### We are now ready to test the script with the following command:
+
+```bash
+python ingest_data.py \
+    --user=root \
+    --password=root \
+    --host=localhost \
+    --port=5432 \
+    --db=ny_taxi \
+    --table_name=green_taxi_data \
+    --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/green/green_tripdata_2019-01.csv.gz"
+```
+
+#### Back in pgAdmin, refresh the Tables and check that it  was created. You can also run a SQL query to check the contents:
+```bash
+SELECT
+    COUNT(1)
+FROM
+    table_name;
+```
+#### This query should retrun the results below:
+![dfghj](images/8.png)

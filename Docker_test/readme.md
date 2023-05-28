@@ -1,3 +1,9 @@
+
+### To create files in Linux
+```
+sudo nano file_name
+```
+
 >__NOTE:__ after i run the following command:
 ``` 
 sudo docker run -it image_name

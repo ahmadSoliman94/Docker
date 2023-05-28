@@ -1,0 +1,15 @@
+FROM python:3.10
+
+WORKDIR /home/ahmad/Docker/Docker_test/ 
+
+COPY  monalisa_noisy.jpg .   
+COPY  script.py .   
+COPY  requirements.txt .   
+
+RUN pip install --no-cache-dir -r  requirements.txt  
+
+
+CMD ["python", "./script.py"]  
+
+
+
